@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>UIFFA CUP </title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@800;900&family=Rajdhani:wght@700&display=swap');
+
+        :root {
+            --gold: #ffea00;
+            --cyan: #00ffff;
+            --red: #ff0055;
+            --green: #00ff66;
+            --arcade-dark: #12092b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            overflow: hidden;
+            background: #05020c;
+            color: #fff;
+            font-family: 'Bangers', cursive, sans-serif;
+            user-select: none;
+        }
+
+        #app {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            min-height: 360px;
+            background: radial-gradient(ellipse at 50% 30%, #2b1055 0%, #0d061f 60%, #030108 100%);
+        }
+
+        #stage {
+            position: absolute;
+            inset: 0;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- HUD SUPERIOR (MARCADOR ARCADE) --- */
+        .hud {
+            position: absolute;
+            z-index: 3;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(920px, calc(100% - 24px));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .brand {
+            font: 900 clamp(16px, 3.5vw, 32px) 'Bangers', cursive;
+            letter-spacing: 2px;
+            color: var(--gold);
+            text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 0 15px rgba(255, 234, 0, 0.8);
+            transform: rotate(-2deg);
+        }
+
+            .brand small {
+                display: block;
+                font: 700 clamp(10px, 1.5vw, 14px) 'Bangers', cursive;
+                letter-spacing: 3px;
+                color: var(--cyan);
+                text-shadow: 2px 2px 0 #000;
+                margin-top: -2px;
+            }
+
+        .score {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat {
+            background: linear-gradient(180deg, #2a085c 0%, #130030 100%);
+            border: 3px solid var(--cyan);
+            border-radius: 12px;
+            padding: 6px 14px;
+            box-shadow: 4px 4px 0 #000, 0 0 15px rgba(0, 255, 255, 0.4);
+            min-width: 80px;
+            text-align: center;
+            transform: skew(-6deg);
+        }
+
+            .stat b {
+                display: block;
+                font: 900 24px 'Bangers', cursive;
+                color: var(--gold);
+                text-shadow: 2px 2px 0 #000;
+                letter-spacing: 1px;
+            }
+
+            .stat span {
+                font: 700 12px 'Bangers', cursive;
+                letter-spacing: 1.5px;
+                color: #fff;
+                text-shadow: 1px 1px 0 #000;
+            }
+
+        .phase {
+            font: 900 16px 'Bangers', cursive;
+            color: #fff;
+            text-align: right;
+            letter-spacing: 1.5px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+            .phase span {
+                display: block;
+                color: var(--gold);
+                font-size: 18px;
+                text-shadow: 2px 2px 0 #000, 0 0 10px rgba(255, 234, 0, 0.6);
+            }
+
+        /* --- SECCIÓN INFERIOR Y CONTROLES DE DISPARO --- */
+        .bottom {
+            position: absolute;
+            z-index: 4;
+            bottom: max(16px, env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(780px, calc(100% - 22px));
+            text-align: center;
+        }
+
+        #message {
+            font: 900 clamp(18px, 3.5vw, 32px) 'Bangers', cursive;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--gold);
+            text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 0 20px rgba(255, 234, 0, 0.9);
+            margin-bottom: 12px;
+            min-height: 38px;
+            animation: pulseMessage 0.8s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulseMessage {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1.05);
+            }
+        }
+
+        .dots {
+            display: flex;
+            justify-content: center;
+            gap: 9px;
+            margin: 0 0 14px;
+        }
+
+        .dot {
+            width: 26px;
+            height: 10px;
+            border-radius: 4px;
+            background: #1a0b36;
+            border: 2px solid #5d3896;
+            box-shadow: 2px 2px 0 #000;
+        }
+
+            .dot.goal {
+                background: var(--green);
+                border-color: #fff;
+                box-shadow: 0 0 15px var(--green), 2px 2px 0 #000;
+            }
+
+            .dot.save {
+                background: var(--red);
+                border-color: #fff;
+                box-shadow: 0 0 15px var(--red), 2px 2px 0 #000;
+            }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            touch-action: manipulation;
+        }
+
+        /* BOTONES DE TIRO RETRO/ARCADE */
+        .shot {
+            flex: 1;
+            max-width: 210px;
+            min-width: 0;
+            min-height: 60px;
+            touch-action: manipulation;
+            border-radius: 14px;
+            border: 3px solid #fff;
+            background: linear-gradient(180deg, #ff0055 0%, #990033 100%);
+            color: #fff;
+            font: 900 18px 'Bangers', cursive;
+            letter-spacing: 1.5px;
+            text-shadow: 2px 2px 0 #000;
+            box-shadow: 0 8px 0 #4a0018, 0 12px 20px #000a;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            transform: skew(-4deg);
+        }
+
+            .shot span {
+                display: block;
+                font: 700 13px 'Bangers', cursive;
+                color: var(--gold);
+                margin-top: 2px;
+                letter-spacing: 1px;
+                text-shadow: 1px 1px 0 #000;
+            }
+
+            .shot:hover:not(:disabled) {
+                transform: skew(-4deg) translateY(-4deg);
+                background: linear-gradient(180deg, #ff3377 0%, #cc0044 100%);
+                box-shadow: 0 12px 0 #4a0018, 0 0 25px rgba(255, 0, 85, 0.8);
+            }
+
+            .shot:active:not(:disabled) {
+                transform: skew(-4deg) translateY(4deg);
+                box-shadow: 0 4px 0 #4a0018, 0 5px 10px #0008;
+            }
+
+            .shot:disabled {
+                opacity: 0.4;
+                filter: grayscale(1);
+                cursor: not-allowed;
+                box-shadow: 0 4px 0 #222;
+            }
+
+        /* --- CELEBRACIÓN DE GOL ESTILO ARCADE (PRESERVADA) --- */
+        .goal-fx {
+            position: absolute;
+            z-index: 6;
+            left: 50%;
+            top: 39%;
+            transform: translate(-50%, -50%) scale(.45) rotate(-7deg);
+            pointer-events: none;
+            opacity: 0;
+            white-space: nowrap;
+            font: 1000 clamp(42px, 11vw, 112px)/.9 Orbitron, sans-serif;
+            font-style: italic;
+            letter-spacing: -3px;
+            color: #fff3a1;
+            -webkit-text-stroke: 2px #b52a08;
+            text-shadow: 4px 5px 0 #e34a08, 8px 10px 0 #65200c, 0 0 24px #ffdf43;
+            filter: drop-shadow(0 8px 12px #000b);
+        }
+
+            .goal-fx::after {
+                content: '⚽';
+                display: inline-block;
+                margin-left: .12em;
+                font-size: .62em;
+                color: #39f5ff;
+                vertical-align: middle;
+                -webkit-text-stroke: 0;
+                text-shadow: 0 3px 8px #000;
+            }
+
+            .goal-fx.show {
+                animation: goalBurst 2.65s cubic-bezier(.16, .8, .25, 1) both;
+            }
+
+        @keyframes goalBurst {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(.25) rotate(-18deg);
+            }
+
+            18% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.18) rotate(5deg);
+            }
+
+            32% {
+                transform: translate(-50%, -50%) scale(.94) rotate(-3deg);
+            }
+
+            48% {
+                transform: translate(-50%, -50%) scale(1.04) rotate(2deg);
+            }
+
+            78% {
+                opacity: 1;
+                transform: translate(-50%, -58%) scale(1) rotate(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -72%) scale(.88) rotate(0);
+            }
+        }
+
+        /* --- OVERLAY & MODAL GENERAL --- */
+        .overlay {
+            position: absolute;
+            z-index: 8;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(8, 3, 20, 0.88);
+            backdrop-filter: blur(8px);
+        }
+
+        .panel {
+            width: min(580px, 100%);
+            border: 4px solid var(--gold);
+            border-radius: 24px;
+            padding: clamp(22px, 4vw, 36px);
+            text-align: center;
+            background: linear-gradient(180deg, #250a4d 0%, #0f0424 100%);
+            box-shadow: 0 0 50px rgba(255, 234, 0, 0.3), inset 0 0 25px rgba(0, 0, 0, 0.8), 8px 8px 0 #000;
+            transform: rotate(-1deg);
+        }
+
+        .eyebrow {
+            font: 900 16px 'Bangers', cursive;
+            letter-spacing: 3px;
+            color: var(--cyan);
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        h1 {
+            font: 900 clamp(36px, 8vw, 64px) 'Bangers', cursive;
+            margin: 8px 0 2px;
+            color: #fff;
+            text-shadow: 4px 4px 0 #000, -2px -2px 0 #000, 0 0 30px rgba(0, 255, 255, 0.6);
+            letter-spacing: 2px;
+            transform: rotate(-1deg);
+        }
+
+            h1 em {
+                font-style: normal;
+                color: var(--gold);
+                text-shadow: 4px 4px 0 #000, 0 0 30px rgba(255, 234, 0, 0.9);
+            }
+
+        .lead {
+            font: 700 20px 'Bangers', cursive;
+            color: #e0d5ff;
+            line-height: 1.3;
+            margin: 10px auto 22px;
+            max-width: 470px;
+            text-shadow: 1.5px 1.5px 0 #000;
+            letter-spacing: 1px;
+        }
+
+        .rules {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 20px 0 26px;
+        }
+
+        .rule {
+            border: 3px solid var(--cyan);
+            background: #170736;
+            border-radius: 16px;
+            padding: 12px 8px;
+            box-shadow: 4px 4px 0 #000;
+            transform: skew(-3deg);
+        }
+
+            .rule b {
+                display: block;
+                color: var(--gold);
+                font: 900 24px 'Bangers', cursive;
+                text-shadow: 2px 2px 0 #000;
+            }
+
+            .rule span {
+                font: 700 13px 'Bangers', cursive;
+                color: #fff;
+                letter-spacing: 1px;
+                text-shadow: 1px 1px 0 #000;
+            }
+
+        /* BOTÓN PRINCIPAL START / REPLAY */
+        .primary {
+            border: 3px solid #fff;
+            border-radius: 20px;
+            padding: 16px 36px;
+            background: linear-gradient(180deg, #00ff66 0%, #009933 100%);
+            color: #fff;
+            font: 900 24px 'Bangers', cursive;
+            letter-spacing: 2px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 #000;
+            box-shadow: 0 6px 0 #ffea00, 0 12px 25px rgba(0, 255, 102, 0.5);
+            transition: all 0.1s ease;
+            transform: skew(-4deg);
+        }
+
+            .primary:hover {
+                background: linear-gradient(180deg, #33ff85 0%, #00cc44 100%);
+                transform: skew(-4deg) translateY(-3deg);
+                box-shadow: 0 11px 0 #004d1a, 0 0 30px rgba(0, 255, 102, 0.8);
+            }
+
+            .primary:active {
+                transform: skew(-4deg) translateY(4deg);
+                box-shadow: 0 3px 0 #004d1a;
+            }
+
+        .hint {
+            font: 700 14px 'Bangers', cursive;
+            color: var(--cyan);
+            margin-top: 16px;
+            letter-spacing: 1.5px;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .hide {
+            display: none !important;
+        }
+
+        /* --- MEDIA QUERIES (ADAPTADOS PARA GOAL-FX Y MÓVILES) --- */
+        @media(max-width:960px) {
+            .goal-fx {
+                top: 46%;
+                font-size: clamp(48px, 14vw, 84px);
+                -webkit-text-stroke: 1.5px #b52a08;
+                text-shadow: 3px 4px 0 #e34a08, 5px 7px 0 #65200c, 0 0 18px #ffdf43;
+            }
+        }
+
+        @media(orientation:landscape) and (max-height:520px) {
+            .hud {
+                top: 5px;
+            }
+
+            .bottom {
+                bottom: 5px;
+            }
+
+            .shot {
+                min-height: 42px;
+            }
+
+            .goal-fx {
+                top: 42%;
+                font-size: clamp(38px, 9vh, 70px);
+            }
+        }
+
+        @media(max-width:620px) {
+            .hud {
+                top: 8px;
+                align-items: flex-start;
+            }
+
+            .brand {
+                font-size: 11px;
+                letter-spacing: 1px;
+            }
+
+                .brand small {
+                    font-size: 8px;
+                }
+
+            .stat {
+                padding: 5px 7px;
+                min-width: 52px;
+            }
+
+                .stat b {
+                    font-size: 14px;
+                }
+
+                .stat span {
+                    font-size: 8px;
+                }
+
+            .phase {
+                font-size: 9px;
+            }
+
+                .phase span {
+                    font-size: 8px;
+                }
+
+            .bottom {
+                bottom: max(9px, env(safe-area-inset-bottom));
+            }
+
+            .shot {
+                min-height: 49px;
+                font-size: 10px;
+                padding: 5px 2px;
+            }
+
+                .shot span {
+                    font-size: 9px;
+                }
+
+            .controls {
+                gap: 6px;
+            }
+
+            .shot {
+                min-height: 52px;
+                border-radius: 10px;
+            }
+
+            #message {
+                font-size: 12px;
+                margin-bottom: 8px;
+            }
+
+            .panel {
+                padding: 22px 16px;
+            }
+
+            .lead {
+                font-size: 15px;
+            }
+
+            .rule {
+                padding: 9px 4px;
+            }
+
+                .rule b {
+                    font-size: 15px;
+                }
+        }
+    </style>
+
+</head>
+<body>
+<div id="app">
+ <div id="stage"></div><button id="soundToggle" aria-label="Activar o silenciar sonido" style="position:absolute;z-index:8;right:12px;top:66px;border:1px solid #ffe36b88;border-radius:22px;background:#080b18b8;color:#ffe36b;padding:8px 11px;font:900 12px Arial;box-shadow:0 0 14px #ffcf3344">🔊 AUDIO</button>\n  <div class="goal-fx" id="goalFx" aria-hidden="true">GOAL!</div>
+ <div class="hud">
+  <div class="brand">UIFFA CUP<small>🕹️🕹️🕹️🕹️</small></div>
+  <div class="score">
+   <div class="stat"><b id="stageNo">1/5</b><span>Stage</span></div>
+   <div class="stat"><b id="goals">0</b><span>Goals</span></div>
+   <div class="stat"><b id="saves">0</b><span>Saves</span></div>
+   <div class="stat"><b id="shotNo">1/5</b><span>Shot</span></div>
+  </div>
+  <div class="phase" id="keeperLevel">Goalie<span>NIVEL 1</span></div>
+ </div>
+ <div class="bottom">
+  <div class="dots" id="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+  <div id="message">CHOOSE WHERE TO PLACE YOUR SHOT</div>
+  <div class="controls" id="controls">
+      <button class="shot" data-dir="left" disabled>◀ Left <span>Placed</span></button>
+      <button class="shot" data-dir="center" disabled>▲ 𝘾enter<span>To the body</span></button>
+   <button class="shot" data-dir="right" disabled>Right ▶<span>Placed</span></button>
+  </div>
+ </div>
+ <div class="overlay" id="intro"><div class="panel">
+                                     <div class="eyebrow">Penalty ⚽🏃‍</div><h1>UIFFA <em>CUP</em></h1>
+  <div class="lead">ENTER THE STADIUM AND CHALLENGE THE 5 GOALKEEPERS</div>
+  <div class="rules"><div class="rule"><b>5</b><span>PENALTY KICKS</span></div><div class="rule"><b>3 ⚽</b><span>GOALS TO ADVANCE</span></div><div class="rule"><b>3 🧤</b><span>AND YOU LOSE</span></div></div>
+  <button class="primary arcade-start" id="start">▶ PLAY NOW</button><div class="hint">EACH ROUND WILL BRING A BETTER GOALKEEPER</div>
+ </div></div>
+ <div class="overlay hide" id="result"><div class="panel"><div class="eyebrow" id="resultEyebrow">ROUND COMPLETED</div><h1 id="resultTitle">GOOD!</h1><div class="lead" id="resultText"></div><button class="primary" id="continue">CONTINUAR</button></div></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+<script>
+const mount=document.getElementById('stage');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x8fc5e8);scene.fog=new THREE.Fog(0x8fc5e8,42,105);
+const camera=new THREE.PerspectiveCamera(42,1,.1,120);camera.position.set(0,4.8,13.2);camera.lookAt(0,2.65,-5.0);
+const isMobile=matchMedia('(max-width: 700px)').matches;const renderer=new THREE.WebGLRenderer({antialias:!isMobile,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,isMobile?1.25:1.8));renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;mount.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe2f4ff,0x315c32,1.35));
+const key=new THREE.DirectionalLight(0xfff0cf,2.0);key.position.set(-8,18,10);key.castShadow=false;scene.add(key);
+for(const [x,z] of [[-12,-5],[12,-5],[-9,5],[9,5]]){const l=new THREE.SpotLight(0xd5e4ed,145,46,Math.PI/5,.55,1.4);l.position.set(x,11,z);l.target.position.set(0,1,-5);scene.add(l,l.target);}
+const mat=(color,rough=.7,metal=0)=>new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});
+const turf=mat(0x34864a,.99),darkTurf=mat(0x2b7540,.99),white=mat(0xe8eee8,.82),steel=mat(0xcbd5d4,.72,.05),netMat=new THREE.MeshStandardMaterial({color:0xd7e7ec,roughness:1,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false});
+// Textura artesanal del césped: variación fina de tonos y briznas, sin brillo plástico.
+const grassCanvas=document.createElement('canvas');grassCanvas.width=grassCanvas.height=1024;const gc=grassCanvas.getContext('2d');
+gc.fillStyle='#34864a';gc.fillRect(0,0,1024,1024);
+for(let i=0;i<18000;i++){const x=Math.random()*1024,y=Math.random()*1024;gc.strokeStyle=Math.random()>.5?'rgba(190,220,145,.16)':'rgba(9,55,20,.12)';gc.lineWidth=.5+Math.random()*1.2;gc.beginPath();gc.moveTo(x,y);gc.lineTo(x+(Math.random()-.5)*3,y-2-Math.random()*7);gc.stroke();}
+for(let i=0;i<90;i++){gc.fillStyle=i%2?'rgba(0,0,0,.018)':'rgba(160,180,120,.018)';gc.fillRect(i*12,0,6,1024);}
+const grassTex=new THREE.CanvasTexture(grassCanvas);grassTex.wrapS=grassTex.wrapT=THREE.RepeatWrapping;grassTex.repeat.set(4,5);grassTex.colorSpace=THREE.SRGBColorSpace;turf.map=grassTex;darkTurf.map=grassTex;
+function box(w,h,d,m,x,y,z,cast=true){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=cast;o.receiveShadow=true;scene.add(o);return o}
+// pitch and mowing stripes
+box(44,.35,48,turf,0,-.22,-5,false);
+for (let i = 0; i < 8; i++)box(44, .012, 5.9, i % 2 ? darkTurf : turf, 0, -.035, -25 + i * 5.9, false);
+
+// ==========================================
+// BANDERAS Y PANCARTAS ESTILO TRIBUNA SUDAMERICANA
+// ==========================================
+function createSupporterBanner(x, y, z, width, height, colors, rotationY = 0) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 912;
+    canvas.height = 246;
+    const ctx = canvas.getContext('2d');
+
+    // Franjas verticales características de los trapos de barra
+    const stripeWidth = canvas.width / colors.length;
+    colors.forEach((col, index) => {
+        ctx.fillStyle = col;
+        ctx.fillRect(index * stripeWidth, 0, stripeWidth + 2, canvas.height);
+    });
+
+    // Texto de aguante con estilo rotulado
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 76px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(' ✌︎㋡ ⋆˚࿔ 𝓑𝒜ℛℛ𝒜 𝓑ℛ𝒜𝓋𝒜 ˚⋆˚࿔˚ ✌︎㋡', canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const geometry = new THREE.PlaneGeometry(width, height);
+
+    const material = new THREE.MeshStandardMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        roughness: 0.7
+    });
+
+    const banner = new THREE.Mesh(geometry, material);
+    banner.position.set(x, y, z);
+    banner.rotation.y = rotationY;
+    scene.add(banner);
+
+    return banner;
+}
+
+// Colocarlas bien ancladas en las paredes/respaldos superiores de las gradas (lejos de la portería)
+// Tribuna de fondo (atrás del todo)
+createSupporterBanner(-6, 11.5, -38, 7, 2.5, ['#ff0000', '#ffffff', '#0000ff'], 0);
+createSupporterBanner(6, 11.5, -38, 7, 2.5, ['#ffea00', '#000000', '#ffea00'], 0);
+
+// Tribunas laterales (costados)
+createSupporterBanner(-22, 10, -25, 6, 2.2, ['#00ff66', '#ffffff', '#000088'], Math.PI / 3);
+createSupporterBanner(22, 10, -25, 6, 2.2, ['#ff0055', '#ffff00', '#111111'], -Math.PI / 3);
+
+
+// CUATRO BANDERAS VERTICALES GRANDES EN LA ÚLTIMA FILA DE LA TRIBUNA.
+// La tela tiene malla propia para ondear suavemente sin imágenes externas.
+const wavingFlags=[];
+function createVerticalFlag(x,z,colors,label){
+ const poleMat=mat(0xb9c5d0,.32,.65),pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,4.25,10),poleMat);
+ pole.position.set(x,14.1,z);scene.add(pole);
+ const w=2.25,h=3.35,nx=18,ny=24,positions=[],uv=[],indices=[];
+ for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++){positions.push((i/nx-.5)*w, -(j/ny)*h, 0);uv.push(i/nx,1-j/ny);if(i<nx&&j<ny){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1;indices.push(a,c,b,b,c,d);}}
+ const canvas=document.createElement('canvas');canvas.width=512;canvas.height=768;const cx=canvas.getContext('2d');
+ const sw=canvas.width/colors.length;colors.forEach((c,i)=>{cx.fillStyle=c;cx.fillRect(i*sw,0,sw+2,768);});
+ cx.fillStyle='rgba(0,0,0,.26)';cx.fillRect(0,0,512,768);
+ cx.strokeStyle='rgba(255,255,255,.7)';cx.lineWidth=9;cx.strokeRect(18,18,476,732);
+ cx.fillStyle='#fff';cx.textAlign='center';cx.textBaseline='middle';cx.font='900 74px Arial';cx.shadowColor='#000';cx.shadowBlur=12;
+ cx.save();cx.translate(256,384);cx.rotate(-Math.PI/2);cx.fillText(label,0,0);cx.restore();
+ const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
+ const material=new THREE.MeshStandardMaterial({map:tex,side:THREE.DoubleSide,roughness:.78,metalness:.02});
+ const cloth=new THREE.Mesh(geo,material);cloth.position.set(x+.08,16.05,z-.04);scene.add(cloth);
+ wavingFlags.push({cloth,base:Float32Array.from(positions),nx,ny,phase:Math.random()*6.28});
+}
+createVerticalFlag(-14,-42,['#0b6b43','#ffffff','#d92735'],'UIFFA CUP');
+createVerticalFlag(-4.7,-42,['#f4d23c','#132b69','#f4d23c'],'SUPER CUP');
+createVerticalFlag(4.7,-42,['#e8e8e8','#17191f','#e8e8e8'],'UIFFA CUP');
+createVerticalFlag(14,-42,['#cf243b','#f4f0df','#1763a8'],'SUPER CUP');
+function animateFlags(t){
+ for(const f of wavingFlags){
+  const a=f.cloth.geometry.attributes.position,b=f.base;
+  for(let j=0;j<=f.ny;j++)for(let i=0;i<=f.nx;i++){
+   const k=j*(f.nx+1)+i,u=i/f.nx,v=j/f.ny;
+   a.setXYZ(k,b[k*3]+Math.sin(v*7+t*1.45+f.phase)*u*.20,
+     b[k*3+1]+Math.sin(u*5+t*1.2+f.phase)*v*.035,
+     Math.sin(u*6.5+t*1.65+f.phase)*u*.42);
+  }
+  a.needsUpdate=true;f.cloth.geometry.computeVertexNormals();
+ }
+}
+
+// penalty area markings
+function line(points, material = white, r = .06) {
+    const g = new THREE.BufferGeometry().setFromPoints(points.map(p => new THREE.Vector3(...p)));
+
+    // Si el material es un MeshStandardMaterial (como 'white'), lo convertimos 
+    // automáticamente a un material de línea para que THREE.js no lo pinte de negro:
+    let lineMat = material;
+    if (material && material.isMeshStandardMaterial) {
+        lineMat = new THREE.LineBasicMaterial({ color: material.color });
+    }
+
+    const o = new THREE.Line(g, lineMat);
+    scene.add(o);
+    return o;
+}
+// Función para las líneas del campo de juego
+function fieldStripe(x, z, w, d) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.025, d), white);
+    m.position.set(x, 0.1, z);
+    scene.add(m);
+    return m;
+}
+
+// Ajuste fino milimétrico hacia adelante
+const offsetZ = 5.45;
+
+// 1. LÍNEA DE GOL (Asentada exactamente en la base de los postes)
+fieldStripe(0, -14 + offsetZ, 30, 0.1);
+
+// 2. ÁREA CHICA 
+fieldStripe(-8, -11.75 + offsetZ, 0.1, 4.5);
+fieldStripe(8, -11.75 + offsetZ, 0.1, 4.5);
+fieldStripe(0, -9.5 + offsetZ, 16, 0.1);
+
+// 3. ÁREA GRANDE 
+fieldStripe(-13, -9.25 + offsetZ, 0.1, 9.5);
+fieldStripe(13, -9.25 + offsetZ, 0.1, 9.5);
+fieldStripe(0, -4.5 + offsetZ, 26, 0.1);
+
+// 4. PUNTO PENAL Y MEDIA LUNA 
+const centerMark = new THREE.Mesh(new THREE.CircleGeometry(0.35, 32), white);
+centerMark.rotation.x = -Math.PI / 2;
+centerMark.position.set(0, 0.11, -7.0 + offsetZ);
+scene.add(centerMark);
+
+const arcPts = [];
+for (let i = 0; i <= 48; i++) {
+    const a = Math.PI * (i / 48);
+    arcPts.push([Math.cos(a) * 4.5, 0.11, (-4.5 + offsetZ) + Math.sin(a) * 4.5]);
+}
+line(arcPts, white, 0.06);
+// ==========================================
+// 1. ESTRUCTURA DE GRADAS (Fondo + Costados en diagonal)
+// ==========================================
+const standMats = [mat(0x182d43), mat(0x243f58), mat(0x314d65), mat(0x13283a)];
+const totalRows = 20;
+
+for (let row = 0; row < totalRows; row++) {
+    const zBase = -22 - row * 1.05;
+    const y = 1.0 + row * 0.62;
+    const xOffset = 17 + row * 0.45;
+    const anchoFondo = xOffset * 2;
+
+    const tierBack = new THREE.Mesh(new THREE.BoxGeometry(anchoFondo, 0.58, 1.15), standMats[row % 4]);
+    tierBack.position.set(0, y, zBase);
+    scene.add(tierBack);
+
+    const profLateral = 22 + row * 0.3;
+    const tierLeft = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.58, profLateral), standMats[row % 4]);
+    tierLeft.position.set(-xOffset - 0.2, y, zBase + profLateral / 2 - 0.5);
+    tierLeft.rotation.y = 0.08;
+    scene.add(tierLeft);
+
+    const tierRight = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.58, profLateral), standMats[row % 4]);
+    tierRight.position.set(xOffset + 0.2, y, zBase + profLateral / 2 - 0.5);
+    tierRight.rotation.y = -0.08;
+    scene.add(tierRight);
+}
+
+// Colocación de Pancartas y Trapos de Barra Sudamericana en las gradas
+createSupporterBanner(-12, 5.5, -28, 5, 2.2, ['#ff0055', '#ffffff', '#111111'], 0.15, '¡LA BANDA!');
+createSupporterBanner(12, 6.2, -32, 6, 2.5, ['#ffea00', '#0022ff', '#ffea00'], -0.15, '¡UIFFA PASIÓN!');
+createSupporterBanner(-21, 7.0, -18, 5, 2.0, ['#00ff66', '#ffffff', '#003300'], Math.PI / 4, '¡AGUANTE!');
+createSupporterBanner(21, 7.5, -18, 5, 2.0, ['#ff0055', '#ffea00', '#00ffff'], -Math.PI / 4, '¡INCORREGIBLES!');
+
+// ==========================================
+//  AFICIONADOS HUMANAZIDADOS COMO DE QUE NO AHUEVITO
+// ==========================================
+const bodyGeo = new THREE.CylinderGeometry(0.15, 0.10, 0.35, 8); // Torso
+const headGeo = new THREE.SphereGeometry(0.09, 6, 6);            // Cabeza
+const skinMat = mat(0xffdbac);                                   // Tono de piel base
+const crowdMats = [
+    mat(0xe7e9e6), mat(0xd7b45d), mat(0x4e91ba),
+    mat(0xb94b52), mat(0x26313b), mat(0x2ecc71)
+];
+
+const crowdMeshes = [];
+
+for (let c = 0; c < crowdMats.length; c++) {
+    // MANTNER separadas  cuerpos y cabezas 
+    const bodyInst = new THREE.InstancedMesh(bodyGeo, crowdMats[c], 450);
+    const headInst = new THREE.InstancedMesh(headGeo, skinMat, 450);
+    let n = 0;
+    const dummy = new THREE.Object3D();
+
+    for (let row = 0; row < totalRows; row++) {
+        const zBase = -22 - row * 1.05;
+        const y = 1.35 + row * 0.62;
+        const xOffset = 17 + row * 0.45;
+        const anchoFondo = xOffset * 2;
+        const colCount = Math.floor(anchoFondo / 1.3);
+
+        // --- Fondo ---
+        for (let col = 0; col < colCount; col++) {
+            if ((row * colCount + col) % crowdMats.length !== c) continue;
+            const xPos = -xOffset + 0.8 + col * 1.3;
+
+            if (n < 450) {
+                // Posicionar cuerpo
+                dummy.position.set(xPos, y, zBase);
+                dummy.scale.set(1, 1, 1);
+                dummy.updateMatrix();
+                bodyInst.setMatrixAt(n, dummy.matrix);
+
+                // cabeza justo encima del torso
+                dummy.position.set(xPos, y + 0.26, zBase);
+                dummy.updateMatrix();
+                headInst.setMatrixAt(n, dummy.matrix);
+
+                if (!bodyInst.userData.basePositions) bodyInst.userData.basePositions = [];
+                bodyInst.userData.basePositions[n] = { x: xPos, y: y, z: zBase, headY: y + 0.26, offset: Math.random() * Math.PI * 2 };
+                n++;
+            }
+        }
+
+        // --- Costados ---
+        const profLateral = 22 + row * 0.3;
+        const depthCount = Math.floor(profLateral / 1.3);
+
+        for (let d = 0; d < depthCount; d++) {
+            if ((row * depthCount + d + 2) % crowdMats.length !== c) continue;
+            const zPos = zBase + d * 1.3;
+
+            // Izquierda
+            const xLeft = -xOffset - 0.2 + (d * 0.12);
+            if (n < 450) {
+                dummy.position.set(xLeft, y, zPos);
+                dummy.rotation.y = 0.08;
+                dummy.updateMatrix();
+                bodyInst.setMatrixAt(n, dummy.matrix);
+
+                dummy.position.set(xLeft, y + 0.26, zPos);
+                dummy.updateMatrix();
+                headInst.setMatrixAt(n, dummy.matrix);
+
+                if (!bodyInst.userData.basePositions) bodyInst.userData.basePositions = [];
+                bodyInst.userData.basePositions[n] = { x: xLeft, y: y, z: zPos, headY: y + 0.26, offset: Math.random() * Math.PI * 2 };
+                n++;
+            }
+
+            // Derecha
+            const xRight = xOffset + 0.2 - (d * 0.12);
+            if (n < 450) {
+                dummy.position.set(xRight, y, zPos);
+                dummy.rotation.y = -0.08;
+                dummy.updateMatrix();
+                bodyInst.setMatrixAt(n, dummy.matrix);
+
+                dummy.position.set(xRight, y + 0.26, zPos);
+                dummy.updateMatrix();
+                headInst.setMatrixAt(n, dummy.matrix);
+
+                if (!bodyInst.userData.basePositions) bodyInst.userData.basePositions = [];
+                bodyInst.userData.basePositions[n] = { x: xRight, y: y, z: zPos, headY: y + 0.26, offset: Math.random() * Math.PI * 2 };
+                n++;
+            }
+        }
+    }
+    scene.add(bodyInst);
+    scene.add(headInst);
+    crowdMeshes.push({ body: bodyInst, head: headInst });
+}
+
+// 1. PANTALLA GIGANTE
+// ===============================================
+const screenGroup = new THREE.Group();
+const screenFrameMat = mat(0x111111);
+
+// Creamos un material con canvas dinámico para que la pantalla parezca encendida
+const canvasJumbo = document.createElement('canvas');
+canvasJumbo.width = 512;
+canvasJumbo.height = 256;
+const ctxJumbo = canvasJumbo.getContext('2d');
+
+// --- DIBUJAR CONTENIDO BRILLANTE EN LA PANTALLA ---
+ctxJumbo.fillStyle = '#050b14';
+ctxJumbo.fillRect(0, 0, canvasJumbo.width, canvasJumbo.height);
+
+ctxJumbo.strokeStyle = '#00ffcc';
+ctxJumbo.lineWidth = 8;
+ctxJumbo.strokeRect(10, 10, canvasJumbo.width - 20, canvasJumbo.height - 20);
+
+ctxJumbo.fillStyle = '#ffffff';
+ctxJumbo.font = '900 64px Arial Black, Arial';
+ctxJumbo.textAlign = 'center';
+ctxJumbo.textBaseline = 'middle';
+ctxJumbo.fillText('UIFFA CUP', canvasJumbo.width / 2, canvasJumbo.height / 2 - 20);
+
+ctxJumbo.fillStyle = '#ff3366';
+ctxJumbo.font = 'bold 32px Arial';
+ctxJumbo.fillText('EN VIVO', canvasJumbo.width / 2, canvasJumbo.height / 2 + 45);
+
+// Declaramos primero la textura y activamos su actualización
+const jumboTexture = new THREE.CanvasTexture(canvasJumbo);
+jumboTexture.needsUpdate = true;
+
+const screenLedMat = new THREE.MeshBasicMaterial({ map: jumboTexture });
+
+// PANTALLON grande con ancho y alto corregidos
+const frameMesh = new THREE.Mesh(new THREE.BoxGeometry(25.6, 12.6, 0.5), screenFrameMat);
+const displayMesh = new THREE.Mesh(new THREE.BoxGeometry(24.8, 11.8, 0.55), screenLedMat);
+screenGroup.add(frameMesh);
+screenGroup.add(displayMesh);
+
+// Posicionada arriba en el centro del fondo
+const topRowY = 1.0 + (totalRows - 1) * 0.62 + 0.5;
+const topRowZ = -22 - (totalRows - 1) * 1.05;
+screenGroup.position.set(0, topRowY + 7.5, topRowZ - 3);
+scene.add(screenGroup);
+// Soportes reforzados para sostener la pantalla gigante
+const supportGeo = new THREE.CylinderGeometry(0.12, 0.12, 5);
+const supportMat = mat(0x333333);
+const sup1 = new THREE.Mesh(supportGeo, supportMat);
+sup1.position.set(-7, 5.5, 0);
+screenGroup.add(sup1);
+const sup2 = sup1.clone();
+sup2.position.x = 7;
+screenGroup.add(sup2);
+// ==========================================
+// BENGALAS Y HUMO DE COLORES EN LAS GRADAS
+// ==========================================
+const smokeGeo = new THREE.SphereGeometry(0.85, 18, 18);
+const smokeMatRed = new THREE.MeshBasicMaterial({ color: 0xff3333, transparent: true, opacity: 0.5 });
+const smokeMatBlue = new THREE.MeshBasicMaterial({ color: 0x3366ff, transparent: true, opacity: 0.5 });
+
+const flareGroup = new THREE.Group();
+
+for (let i = 0; i < 16; i++) {
+    const matFlare = i % 2 === 0 ? smokeMatRed : smokeMatBlue;
+    const smokePuff = new THREE.Mesh(smokeGeo, matFlare);
+    // Ubicar aleatoriamente en los bloques laterales e inferiores
+    const posX = (i % 2 === 0 ? -1 : 1) * (18 + Math.random() * 5);
+    const posZ = -25 - Math.random() * 10;
+    smokePuff.position.set(posX, 3 + Math.random() * 2, posZ);
+    flareGroup.add(smokePuff);
+}
+scene.add(flareGroup);
+
+// ==========================================
+//  ANIMACIÓN EN TIEMPO REAL 
+// ==========================================
+const dummyAnim = new THREE.Object3D();
+
+function animateCrowd(time) {
+    const t = time * 0.004;
+
+    // Animar humo (flotar levemente)
+    flareGroup.children.forEach((puff, idx) => {
+        puff.position.y += Math.sin(t + idx) * 14.13;
+        puff.scale.x = 1 + Math.sin(t * 2 + idx) * 6.1;
+        puff.scale.y = 1 + Math.cos(t * 2 + idx) * 11.1;
+    });
+
+    // Animar la multitud (cuerpo y cabeza saltando juntos)
+    crowdMeshes.forEach(({ body, head }) => {
+        const positions = body.userData.basePositions;
+        if (!positions) return;
+
+        for (let i = 0; i < positions.length; i++) {
+            const pos = positions[i];
+
+            const jump = Math.sin(t * 3.5 + pos.offset + pos.x * 0.3) * 0.12;
+            const bounceY = Math.max(0, jump);
+            const swayX = Math.cos(t * 2 + pos.offset) * 0.03;
+
+            // Mover Torso
+            dummyAnim.position.set(pos.x + swayX, pos.y + bounceY, pos.z);
+            dummyAnim.scale.set(1, 1 + bounceY * 0.6, 1);
+            dummyAnim.updateMatrix();
+            body.setMatrixAt(i, dummyAnim.matrix);
+
+            // Mover Cabeza de forma sincronizada con el torso
+            dummyAnim.position.set(pos.x + swayX, pos.headY + bounceY, pos.z);
+            dummyAnim.scale.set(1, 1, 1); // La cabeza no se estira, solo salta
+            dummyAnim.updateMatrix();
+            head.setMatrixAt(i, dummyAnim.matrix);
+        }
+        body.instanceMatrix.needsUpdate = true;
+        head.instanceMatrix.needsUpdate = true;
+    });
+}
+
+
+// Partículas de césped que saltan del punto de apoyo al ejecutar el penal.
+const grassParticles=[];const grassParticleMat=new THREE.MeshStandardMaterial({color:0x8fc45c,roughness:1});
+const grassParticleGeo=new THREE.TetrahedronGeometry(.055,0);
+for(let i=0;i<34;i++){const m=new THREE.Mesh(grassParticleGeo,grassParticleMat);m.visible=false;scene.add(m);grassParticles.push(m);}
+function turfBurst(){
+ const origin=new THREE.Vector3((Math.random()-.5)*.24,.08,6.0);
+ grassParticles.forEach((p,i)=>{p.visible=true;p.position.copy(origin);p.userData.v=new THREE.Vector3((Math.random()-.5)*3,1.0+Math.random()*3,-Math.random()*2.4);p.userData.life=.35+Math.random()*.5;p.rotation.set(Math.random()*6,Math.random()*6,Math.random()*6);});
+}
+function updateTurfBurst(dt){for(const p of grassParticles){if(!p.visible)continue;p.userData.life-=dt;p.userData.v.y-=8*dt;p.position.addScaledVector(p.userData.v,dt);p.rotation.x+=dt*9;p.rotation.z+=dt*7;if(p.userData.life<=0||p.position.y<0){p.visible=false;}}}
+
+// goal frame at rear, with deep tunnel
+const goalZ=-9.0,goalW=13.6,goalH=5.0,depth=5.4;
+// net surface: roof, back and side panels with subdivided vertices for dynamic deformation
+const netGroup=new THREE.Group();scene.add(netGroup);
+function netPanel(kind){let positions=[],indices=[],uv=[];const nx=64,ny=34;
+for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++){let u=i/nx,v=j/ny,x=0,y=0,z=0;if(kind==='back'){x=(u-.5)*goalW;y=v*goalH;z=goalZ-depth;}else if(kind==='roof'){x=(u-.5)*goalW;y=goalH;z=goalZ-v*depth;}else if(kind==='left'){x=-goalW/2;y=v*goalH;z=goalZ-u*depth;}else if(kind==='right'){x=goalW/2;y=v*goalH;z=goalZ-u*depth;}else if(kind==='floor'){x=(u-.5)*goalW;y=0;z=goalZ-v*depth;}positions.push(x,y,z);uv.push(u,v);if(i<nx&&j<ny){let a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1;indices.push(a,c,b,b,c,d)}}
+const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();const mesh=new THREE.Mesh(geo,netMat);mesh.castShadow=false;mesh.receiveShadow=false;mesh.userData={kind,base:Float32Array.from(positions),nx,ny};netGroup.add(mesh);return mesh;}
+const netMeshes = [netPanel('back'), netPanel('roof'), netPanel('left'), netPanel('right')];// Estructura frontal sencilla: la red cae libre hasta el césped, sin jaula rígida
+const postGeo=new THREE.CylinderGeometry(.14,.16,.0,16);
+function beam(a,b,r,m){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),dir=new THREE.Vector3().subVectors(B,A);const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,dir.length(),18),m);mesh.position.copy(A).add(B).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());mesh.castShadow=false;scene.add(mesh);return mesh}
+beam([-goalW/2,0,goalZ],[ -goalW/2,goalH,goalZ],.105,steel);beam([goalW/2,0,goalZ],[goalW/2,goalH,goalZ],.105,steel);beam([-goalW/2,goalH,goalZ],[goalW/2,goalH,goalZ],.115,steel);
+// Red física: hilos individuales, claros y visibles en cada cara de la portería.
+// Cada cuerda conserva sus vértices para ondularse cuando recibe el impacto del balón.
+const cordMat=new THREE.LineBasicMaterial({color:0xe5e8df,transparent:true,opacity:.94});
+const cordMatSoft=new THREE.LineBasicMaterial({color:0xbac8c0,transparent:true,opacity:.78});
+const netStrands=[];
+function strand(points,material=cordMat,kind='back'){const g=new THREE.BufferGeometry().setFromPoints(points.map(p=>new THREE.Vector3(...p)));const o=new THREE.Line(g,material);o.castShadow=false;o.receiveShadow=false;netGroup.add(o);netStrands.push({geo:g,base:Float32Array.from(g.attributes.position.array),kind});return o;}
+function netPoint(kind,u,v){if(kind==='back')return [(u-.5)*goalW,v*goalH,goalZ-depth];if(kind==='roof')return [(u-.5)*goalW,goalH,goalZ-v*depth];if(kind==='left')return [-goalW/2,v*goalH,goalZ-u*depth];if(kind==='right')return [goalW/2,v*goalH,goalZ-u*depth];return [(u-.5)*goalW,0,goalZ-v*depth];}
+function drawNetFace(kind,cols,rows){const samples=kind==='back'?32:24;for(let i=0;i<=cols;i++){const u=i/cols;strand(Array.from({length:samples+1},(_,j)=>netPoint(kind,u,j/samples)),cordMat,kind);}for(let j=0;j<=rows;j++){const v=j/rows;strand(Array.from({length:samples+1},(_,i)=>netPoint(kind,i/samples,v)),j%2?cordMatSoft:cordMat,kind);}}
+drawNetFace('back', 42, 25); drawNetFace('roof', 42, 16); drawNetFace('left', 18, 25); drawNetFace('right', 18, 25);
+// Rayas diagonales negras sobre la red blanca de la primera fase.
+const diagonalNetPositions=[];
+for(let row=0;row<25;row++)for(let col=0;col<42;col++){
+ const x0=-goalW/2+goalW*col/42, x1=-goalW/2+goalW*(col+1)/42;
+ const y0=goalH*row/25, y1=goalH*(row+1)/25;
+ diagonalNetPositions.push(x0,y0,goalZ-depth-.026,x1,y1,goalZ-depth-.026);
+}
+const diagonalNetGeo=new THREE.BufferGeometry();
+diagonalNetGeo.setAttribute('position',new THREE.Float32BufferAttribute(diagonalNetPositions,3));
+const diagonalNet=new THREE.LineSegments(diagonalNetGeo,new THREE.LineBasicMaterial({color:0x101216,transparent:true,opacity:.9}));
+diagonalNet.frustumCulled=false;netGroup.add(diagonalNet);// pequeños nudos visibles en las intersecciones del fondo de la red
+const knotGeo=new THREE.SphereGeometry(.009,4,3);const knotMat=new THREE.MeshBasicMaterial({color:0xe6eee9});
+for(let i=0;i<=42;i++)for(let j=0;j<=25;j++){const k=new THREE.Mesh(knotGeo,knotMat);k.position.set(-goalW/2+goalW*i/42,goalH*j/25,goalZ-depth-.012);netGroup.add(k);}
+// Escenario limpio inspirado en el recorte aprobado: cielo, césped, arco y protagonistas.
+// Se omiten gradas, puntos de público, trusses y anuncios 3D para evitar ruido visual.
+// Balón con paneles geométricos inspirados en el diseño de la Liga MX.
+const ballCanvas=document.createElement('canvas');ballCanvas.width=1024;ballCanvas.height=512;const bc=ballCanvas.getContext('2d');
+bc.fillStyle='#f0eee4';bc.fillRect(0,0,1024,512);
+for(let i=0;i<10;i++){const x=(i%5)*220-40,y=Math.floor(i/5)*270+35;bc.save();bc.translate(x+100,y+90);bc.rotate((i%2?1:-1)*.18);bc.fillStyle=['#151f2b','#e24b36','#b8d52d','#172f49'][i%4];bc.beginPath();bc.moveTo(-75,-55);bc.lineTo(20,-88);bc.lineTo(88,-18);bc.lineTo(55,65);bc.lineTo(-35,72);bc.closePath();bc.fill();bc.strokeStyle='#f3f0e6';bc.lineWidth=10;bc.stroke();bc.restore();}
+bc.fillStyle='#f6f3e9';bc.font='900 38px Arial';bc.textAlign='center';bc.fillText('LIGA MX',512,260);const ballTex=new THREE.CanvasTexture(ballCanvas);ballTex.colorSpace=THREE.SRGBColorSpace;
+
+const ballGroup=new THREE.Group();scene.add(ballGroup);const ballMat=new THREE.MeshStandardMaterial({map:ballTex,color:0xffffff,roughness:.72,metalness:0});const ball=new THREE.Mesh(new THREE.SphereGeometry(.43,48,36),ballMat);ball.castShadow=true;ballGroup.add(ball);ballGroup.position.set(0,.45,7.1);ballGroup.scale.setScalar(1.12);
+
+// articulated keeper
+const keeper=new THREE.Group();scene.add(keeper);keeper.position.set(0,1.08,goalZ+.38);
+
+const skin=mat(0xb97850),shirt=mat(0xe2a52f,.42),shorts=mat(0x172333),socks=mat(0xf4f4ef,.72),glove=mat(0xeaf4f5,.4),boots=mat(0x9cff00,.28,.08),bootBlack=mat(0x101812,.45,.05),bootStud=mat(0xbaff36,.3,.05);
+function sphere(parent,r,m,pos,scale=[1,1,1]){const o=new THREE.Mesh(new THREE.SphereGeometry(r,18,14),m);o.position.set(...pos);o.scale.set(...scale);o.castShadow=true;parent.add(o);return o}
+function limb(parent,a,b,r1,r2,m){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),d=new THREE.Vector3().subVectors(B,A);const o=new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,d.length(),12),m);o.position.copy(A).add(B).multiplyScalar(.5);o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());o.castShadow=true;parent.add(o);return o}
+const body = sphere(keeper, .31, shirt, [0, 1.16, 0], [.94, 1.0, .39]);
+
+// Silueta atlética: espalda y hombros anchos, pecho marcado y cintura recogida.
+sphere(keeper, .21, shirt, [-.15, 1.49, -.02], [1.1, .75, .55]);
+sphere(keeper, .21, shirt, [.15, 1.49, -.02], [1.1, .75, .55]);
+
+
+// camiseta ARQUERO
+const kitTrim = mat(0xf4f4ef, .22, .22), kitDark = mat(0x111820, .5, .08);
+
+for (let side of [-1, 1]) {
+  for (let n = 0; n < 3; n++) {
+    // 1. Reducimos el alto (de .66 a .38) y el grosor para que no sobresalgan del cuerpo
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(.045, .38, .015), kitTrim);
+    
+    // 2. Ajustamos 'Z' a .24 (antes .365) para que queden pegadas al jersey sin flotar
+    stripe.position.set(side * (.12 + n * .06), 1.35, .24);
+    
+    // 3. Suave inclinación para que sigan la forma del torso
+    stripe.rotation.z = side * -.22;
+    keeper.add(stripe);
+  }
+
+  // Hombreras reducidas para que no salgan por los lados
+  const shoulder = new THREE.Mesh(new THREE.BoxGeometry(.06, .20, .02), kitTrim);
+  shoulder.position.set(side * .22, 1.55, .12);
+  shoulder.rotation.z = side * -.40;
+  keeper.add(shoulder);
+
+
+}
+// Número grande centrado en el pecho, con contorno oscuro.
+const numberCanvas = document.createElement('canvas'); numberCanvas.width = 276; numberCanvas.height = 350;
+const nctx = numberCanvas.getContext('2d'); nctx.clearRect(0, 0, 256, 320);
+nctx.font = '900 230px Arial Black,Arial'; nctx.textAlign = 'center'; nctx.textBaseline = 'middle';
+nctx.lineWidth = 17; nctx.strokeStyle = '#101820'; nctx.strokeText('1', 128, 165);
+nctx.fillStyle = '#fff'; nctx.fillText('1', 128, 165);
+const numberTex = new THREE.CanvasTexture(numberCanvas); numberTex.colorSpace = THREE.SRGBColorSpace;
+const numberMesh = new THREE.Mesh(new THREE.PlaneGeometry(.42, .53), new THREE.MeshBasicMaterial({ map: numberTex, transparent: true, depthWrite: false }));
+numberMesh.position.set(.16, 1.37, .374); keeper.add(numberMesh);
+// Cabeza con expresión visible: cabello, orejas, ojos, cejas, nariz y boca orientados al cobrador.
+sphere(keeper,.28,skin,[0,1.92,0],[.9,1.05,.9]);
+const hair=mat(0x241b18,.92),eyeWhite=mat(0xf7f5ed,.5),iris=mat(0x34251d,.45),faceDark=mat(0x241c1a,.85);
+// Cabello deportivo: corte corto con volumen, mechones definidos y patillas.
+const capMat=mat(0x080b10,.32,.11);
+const capDome=new THREE.Mesh(new THREE.SphereGeometry(.220,24,16,0,Math.PI*2,0,Math.PI*.52),capMat);
+capDome.position.set(0,2.105,.005);capDome.visible=false;keeper.add(capDome);
+const capVisor=new THREE.Mesh(new THREE.SphereGeometry(.245,44,32,30,Math.PI*2,0,Math.PI*.5),capMat);
+capVisor.scale.set(1.32,.16,1.42);capVisor.position.set(0,2.075,.235);capVisor.visible=false;keeper.add(capVisor);
+const capSeam=new THREE.Mesh(new THREE.TorusGeometry(.235,.012,6,24),kitTrim);
+capSeam.position.set(0,2.105,.015);capSeam.rotation.x=Math.PI/2;capSeam.visible=false;keeper.add(capSeam);
+const hairCap=new THREE.Mesh(new THREE.SphereGeometry(.292,28,18,0,Math.PI*2,0,Math.PI*.53),hair);
+hairCap.position.set(0,2.045,.005);hairCap.scale.set(1,.92,1);hairCap.visible=true;keeper.add(hairCap);
+// Fleco peinado hacia un lado y mechones cortos sobre la frente.
+for(let i=0;i<9;i++){
+ const lock=new THREE.Mesh(new THREE.SphereGeometry(.075,12,12),hair);
+ lock.scale.set(.78,.55,1.15);
+ lock.position.set(-.19+i*.061,2.105+Math.sin(i*.7)*.018,.205);
+ lock.rotation.z=-.18-i*.025;keeper.add(lock);
+}
+for(const side of [-1,1]){
+ const sideLock=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),hair);
+ sideLock.scale.set(.55,1.05,.72);sideLock.position.set(side*.245,1.99,.025);keeper.add(sideLock);
+}
+
+// --- EXTREMIDADES Y SHORT LIMPIOS Y ACTUALIZADOS ---
+const looseShorts = new THREE.Group();
+keeper.add(looseShorts);
+
+const waistShort = new THREE.Mesh(new THREE.CylinderGeometry(.26, .27, .24, 24), shirt);
+waistShort.position.set(0, 0.95, 0);
+keeper.add(waistShort);
+const armPivots = [];
+for (let s of [-1, 1]) {
+    // --- BRAZOS CON HOMBRO ARTICULADO (SIN HUECOS) ---
+    const pivot = new THREE.Group();
+    pivot.position.set(s * 0.32, 1.48, 0);
+    pivot.rotation.x = 0.15;
+    pivot.rotation.z = s * -0.1;
+    keeper.add(pivot);
+
+    // Esfera para tapar la unión del hombro y que no se vea despegado
+    sphere(pivot, 0.13, shirt, [s * 0.04, 0, 0], [1.1, 1, 1]);
+
+    // Mangas y extremidades del brazo
+    limb(pivot, [0, 0, 0], [s * 0.32, -0.36, 0], 0.155, 0.125, shirt);
+    limb(pivot, [s * 0.32, -0.36, 0], [s * 0.57, -0.63, 0.02], 0.105, 0.075, skin);
+    sphere(pivot, 0.14, glove, [s * 0.62, -0.68, 0.03], [1, 0.85, 0.65]);
+
+    armPivots.push({ pivot, s });
+
+    // --- PIERNAS ---
+    const legPivot = new THREE.Group();
+    legPivot.position.set(s * 0.16, 0.83, 0);
+
+    legPivot.rotation.x = 0.08;
+    legPivot.rotation.z = s * 0.10;
+
+    keeper.add(legPivot);
+
+    limb(legPivot, [0, 0, 0], [0, -0.28, 0], 0.165, 0.145, shirt);
+    sphere(legPivot, 0.09, skin, [0, -0.30, 0.02], [1, 1, 1]);
+
+    limb(legPivot, [0, -0.30, 0.01], [0, -0.75, -0.04], 0.115, 0.085, socks);
+    sphere(legPivot, 0.095, socks, [0, -0.55, -0.02], [0.94, 1.38, 0.92]);
+
+    const shinPad = sphere(legPivot, 0.071, kitDark, [0.01, -0.52, 0.06], [0.78, 1.5, 0.28]);
+
+    for (let band = 0; band < 2; band++) {
+        const sockBand = new THREE.Mesh(new THREE.TorusGeometry(0.095 - band * 0.007, 0.009, 6, 18), kitDark);
+        sockBand.rotation.x = Math.PI / 2;
+        sockBand.position.set(0, -0.56 + band * 0.045, -0.02);
+        legPivot.add(sockBand);
+    }
+
+    sphere(legPivot, 0.15, boots, [0, -0.82, 0.06], [1.2, 0.55, 1.6]);
+    const sole = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.05, 0.36), bootBlack);
+    sole.position.set(0, -0.89, 0.06);
+    legPivot.add(sole);
+
+    for (let stud = 0; stud < 5; stud++) {
+        const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.032, 0.06, 7), bootStud);
+        pin.position.set((stud % 2 ? -0.065 : 0.065), -0.93, -0.05 + Math.floor(stud / 2) * 0.1);
+        legPivot.add(pin);
+    }
+
+    armPivots.push({ pivot: legPivot, s, leg: true });
+}
+for(const x of [-.095,.095]){sphere(keeper,.036,eyeWhite,[x,1.955,.247],[1,.82,.48]);sphere(keeper,.019,iris,[x+.006,1.952,.269],[1,.95,.55]);sphere(keeper,.008,mat(0x080b0d),[x+.006,1.952,.279],[1,1,.45]);}
+// Cejas ligeramente inclinadas: mirada concentrada y decidida.
+limb(keeper,[-.145,2.015,.245],[-.045,2.025,.25],.018,.014,faceDark);limb(keeper,[.045,2.025,.25],[.145,2.015,.245],.014,.018,faceDark);
+sphere(keeper,.028,skin,[0,1.91,.267],[.72,1.25,.72]);
+// Boca como una pequeña curva oscura, no una cara vacía.
+const mouthCurve=new THREE.QuadraticBezierCurve3(new THREE.Vector3(-.052,1.855,.25),new THREE.Vector3(0,1.842,.267),new THREE.Vector3(.052,1.855,.25));
+const mouth=new THREE.Mesh(new THREE.TubeGeometry(mouthCurve,10,.009,5,false),faceDark);keeper.add(mouth);
+
+
+// Y asegúrate de que el short tenga el color correcto o si usas una textura de short unificada,
+// o si prefieres quitar el bloque de 'looseShorts' antiguo que pudiera estar encimándose abajo.
+// badge and jersey number
+keeper.scale.setScalar(1.45); const keeperHome = { x: 0, y: 0.51, z: goalZ + .18 };
+const phaseLooks=[
+ {net:0xf3f5f2,cord:0xf4f6f1,shirt:0xe2a52f,shorts:0x172333,socks:0x101c2a,glove:0xeaf4f5,skin:0xb97850,ball:false},
+ {net:0x15191e,cord:0x090d12,shirt:0xd52d42,shorts:0x11151b,socks:0x080b10,glove:0x20252b,skin:0x9b674c,ball:false},
+ {net:0x1745c8,cord:0x3975ff,shirt:0x1767d2,shorts:0x101d42,socks:0x102d66,glove:0x7fbaff,skin:0xb97850,ball:false},
+ {net:0x19b95b,cord:0x42ef8b,shirt:0x16934b,shorts:0x103b2a,socks:0x0c512f,glove:0x8df0b1,skin:0xb97850,ball:false},
+ {net:0xf4c542,cord:0xffe58a,shirt:0xc58b16,shorts:0x21180a,socks:0x39270a,glove:0xffdf73,skin:0xb97850,ball:true}
+];
+function setPhaseLook(){
+ diagonalNet.visible=!bossMode&&phase===1;
+ const look=phaseLooks[Math.min(phase-1,4)];
+ const dark=bossMode;
+ netMat.color.setHex(dark?0x161820:look.net);netMat.opacity=dark?.16:.11;
+ cordMat.color.setHex(dark?0x30323a:look.cord);cordMat.opacity=dark?.98:.98;
+ cordMatSoft.color.setHex(dark?0x17191f:look.net);
+ knotMat.color.setHex(dark?0x4a111b:look.cord);
+ shirt.color.setHex(dark?0x050609:look.shirt);shorts.color.setHex(dark?0x030407:look.shorts);
+ socks.color.setHex(0xf4f4ef);glove.color.setHex(dark?0x090a0f:look.glove);
+ skin.color.setHex(dark?0x090a0e:look.skin);boots.color.setHex(dark?0x15171c:0x9cff00);bootBlack.color.setHex(dark?0x030407:0x101812);bootStud.color.setHex(dark?0x30343b:0xbaff36);hair.color.setHex(dark?0x020204:0x241b18);
+ eyeWhite.color.setHex(dark?0x8e101c:0xf7f5ed);iris.color.setHex(dark?0xff172c:0x34251d);
+ scene.background=new THREE.Color(dark?0x030308:[0x8fc5e8,0x6c8198,0x263f74,0x174a31,0x392a0d][phase-1]);
+ scene.fog.color.setHex(dark?0x05050b:[0x8fc5e8,0x293748,0x101e46,0x092a1a,0x211805][phase-1]);
+ turf.color.setHex(dark?0x11151a:[0x34864a,0x28613d,0x24513b,0x286b3d,0x806326][phase-1]);
+ darkTurf.color.setHex(dark?0x090c11:[0x2b7540,0x19472e,0x173d35,0x174c2c,0x4a3918][phase-1]);
+ if(look.ball || dark){
+  const c=document.createElement('canvas');c.width=512;c.height=256;const x=c.getContext('2d');
+  x.fillStyle=dark?'#08090d':'#090b10';x.fillRect(0,0,512,256);
+  for(let i=0;i<12;i++){x.strokeStyle=dark?'#e71932':'#e5b83d';x.lineWidth=9;x.beginPath();x.arc((i%4)*150+35,Math.floor(i/4)*100+45,35,0,Math.PI*1.7);x.stroke();}
+  x.fillStyle=dark?'#ff263e':'#f4ce58';x.font='900 27px Arial';x.textAlign='center';x.fillText(dark?'SHADOW':'GOLD',256,142);
+  ballMat.map=new THREE.CanvasTexture(c);ballMat.map.colorSpace=THREE.SRGBColorSpace;ballMat.needsUpdate=true;
+ }else if(ballMat.map!==ballTex){ballMat.map=ballTex;ballMat.needsUpdate=true;}
+ if(dark){
+  // Capa oscura y cabello en puntas para el guardameta secreto.
+  if(!keeper.userData.cape){const cape=new THREE.Mesh(new THREE.ConeGeometry(.72,1.75,5),mat(0x020205,.95));cape.position.set(0,.95,-.32);cape.rotation.x=-.18;keeper.add(cape);keeper.userData.cape=cape;}
+  keeper.userData.cape.visible=true;
+  if(!keeper.userData.spikes){keeper.userData.spikes=[];for(let i=0;i<9;i++){const sp=new THREE.Mesh(new THREE.ConeGeometry(.075,.48,5),hair);sp.position.set((i-4)*.105,2.31+Math.abs(i-4)*.025,.01);sp.rotation.z=(i-4)*-.22;keeper.add(sp);keeper.userData.spikes.push(sp);}}
+  keeper.userData.spikes.forEach(o=>o.visible=true);
+  eyeWhite.color.setHex(0xff1028);
+ }else{
+  if(keeper.userData.cape)keeper.userData.cape.visible=false;
+  if(keeper.userData.spikes)keeper.userData.spikes.forEach(o=>o.visible=false);
+ }
+}
+
+// Escenario limpio: sin paneles ni focos decorativos.
+// Sin partículas luminosas flotantes: el césped, la red y los jugadores quedan como protagonistas.
+// Impulso de malla: hundimiento profundo y ondas que se propagan por toda la red.
+let impact={active:false,x:0,y:1.2,power:0,time:0};
+function netPush(x,y,z,now=0){
+ const dx=x-impact.x,dy=y-impact.y,dist=Math.sqrt(dx*dx+dy*dy);
+ const idle=Math.sin(now*1.35+x*.34+y*.55+z*.2)*.009;
+ if(!impact.active)return idle;
+ const local=Math.exp(-(dx*dx/8.5+dy*dy/5.2));
+ const wave=Math.sin(impact.time*19-dist*2.45)*Math.exp(-dist*.23)*impact.power*.82;
+ const pocket=(1-Math.exp(-impact.time*11))*local*impact.power*2.45;
+ const traveling=Math.sin(impact.time*12-dist*1.3)*Math.exp(-dist*.13)*impact.power*.34;
+ return idle+pocket+wave+traveling;
+}
+
+function netAnchor(kind,x,y,z){
+ const clamp=v=>Math.max(0,Math.min(1,v));
+ const ease=v=>{v=clamp(v);return v*v*(3-2*v);};
+ let d;
+ if(kind==='back') d=Math.min(goalW/2-Math.abs(x),y,goalH-y);
+ else if(kind==='roof') d=Math.min(goalW/2-Math.abs(x),Math.abs(z-goalZ),Math.abs(z-(goalZ-depth)));
+ else if(kind==='left'||kind==='right') d=Math.min(y,goalH-y,Math.abs(z-goalZ),Math.abs(z-(goalZ-depth)));
+ else d=Math.min(goalW/2-Math.abs(x),Math.abs(z-goalZ),Math.abs(z-(goalZ-depth)));
+ return ease(d/.62);
+}
+
+function deformNet(dt){
+ if(impact.active){impact.time+=dt;impact.power=Math.max(0,impact.power-dt*.20);if(impact.power<=.005||impact.time>6.2)impact.active=false;}
+ const now=clock.elapsedTime;
+ for(const mesh of netMeshes){const a=mesh.geometry.attributes.position,base=mesh.userData.base,kind=mesh.userData.kind;for(let i=0;i<a.count;i++){const x=base[i*3],y=base[i*3+1],z=base[i*3+2],push=netPush(x,y,z,now);const factor=(kind==='back'?1:kind==='roof'?.72:.82)*netAnchor(kind,x,y,z);const sway=Math.sin(now*1.8+x*.55+y*.65+z*.2)*.012*factor;a.setXYZ(i,x+sway,y+Math.sin(now*1.5+x*.38+z*.2)*.009*factor,z-push*factor);}a.needsUpdate=true;}
+ for(const d of netStrands){const a=d.geo.attributes.position,base=d.base;for(let i=0;i<a.count;i++){const x=base[i*3],y=base[i*3+1],z=base[i*3+2],push=netPush(x,y,z,now);const anchor=netAnchor(d.kind||'back',x,y,z);const sway=Math.sin(now*1.8+x*.55+y*.65+z*.2)*.012*anchor;a.setXYZ(i,x+sway,y+Math.sin(now*1.5+x*.38+z*.2)*.009*anchor,z-push*anchor);}a.needsUpdate=true;}
+}
+let phase=1,bossMode=false,goals=0,saves=0,shot=1,active=false,locked=false,anim=null,shotResults=[];let keeperDifficulty=[.28,.40,.53,.67,.79];
+const $=id=>document.getElementById(id);const buttons=[...document.querySelectorAll('.shot')];
+function updateHUD(){ $('stageNo').textContent=(bossMode?'JEFE':phase+'/5');$('goals').textContent=goals;$('saves').textContent=saves;$('shotNo').textContent=shot+'/5';$('keeperLevel').innerHTML='PORTERO<span>NIVEL '+phase+'</span>';$('dots').innerHTML=Array.from({length:5},(_,i)=>`<i class="dot ${shotResults[i]||''}"></i>`).join('');}
+function message(t,color='gold'){const el=$('message');el.textContent=t;el.style.color=color==='red'?'#ff6477':color==='green'?'#6bf0ad':'#f4ce78';}
+function setButtons(disabled){buttons.forEach(b=>b.disabled=disabled)}
+function resetPositions(){ballGroup.position.set(0,.45,7.1);ballGroup.rotation.set(0,0,0);ballGroup.scale.setScalar(1.12);keeper.position.set(0,keeperHome.y,goalZ+.38);keeper.rotation.set(0,0,0);keeper.position.z=keeperHome.z;armPivots.forEach(o=>{o.pivot.rotation.set(0,0,0)});}
+
+// AUDIO ARCADE ORIGINAL: chiptune sintetizado + ambiente de estadio, silbato y efectos.
+const ArcadeAudio=(()=>{
+ let ctx=null,master=null,musicTimer=null,step=0,started=false,ambient=null;
+ const melody=[659,784,988,784,587,659,880,659,523,659,784,659,494,587,740,587];
+ function tone(freq,dur=.12,type='square',vol=.045,when=0){
+  if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(freq,ctx.currentTime+when);
+  g.gain.setValueAtTime(.0001,ctx.currentTime+when);g.gain.exponentialRampToValueAtTime(vol,ctx.currentTime+when+.012);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+when+dur);
+  o.connect(g);g.connect(master);o.start(ctx.currentTime+when);o.stop(ctx.currentTime+when+dur+.03);
+ }
+ function noise(dur,vol,filterFreq=900){
+  if(!ctx)return;const n=Math.floor(ctx.sampleRate*dur),buf=ctx.createBuffer(1,n,ctx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+  const src=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();src.buffer=buf;f.type='bandpass';f.frequency.value=filterFreq;g.gain.value=vol;src.connect(f);f.connect(g);g.connect(master);src.start();
+ }
+ function tick(){if(!ctx||ctx.state!=='running')return;const f=melody[step%melody.length];tone(f,.13,'square',.025);if(step%4===0)tone(f/2,.19,'triangle',.028,.015);if(step%8===7)noise(.07,.018,2500);step++;}
+ function start(){
+  if(started){ctx?.resume();return;}const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  ctx=new AC();master=ctx.createGain();master.gain.value=.58;master.connect(ctx.destination);started=true;ctx.resume();
+  // Murmullo de tribuna suave y continuo, filtrado para no molestar.
+  const len=ctx.sampleRate*2,buf=ctx.createBuffer(1,len,ctx.sampleRate),data=buf.getChannelData(0);
+  for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*(.18+Math.sin(i/ctx.sampleRate*2*Math.PI*1.1)*.05);
+  ambient=ctx.createBufferSource();ambient.buffer=buf;ambient.loop=true;
+  const filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=520;
+  const ag=ctx.createGain();ag.gain.value=.045;ambient.connect(filter);filter.connect(ag);ag.connect(master);ambient.start();
+  tick();musicTimer=setInterval(tick,185);
+ }
+ function whistle(){tone(1550,.42,'sine',.07);tone(1850,.35,'sine',.045,.12);}
+ function kick(){tone(105,.09,'triangle',.12);noise(.085,.08,420);}
+ function goal(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,.42,'square',.055,i*.075));noise(.8,.12,720);tone(196,.65,'sawtooth',.035,.02);}
+ function save(){tone(220,.16,'triangle',.09);tone(165,.28,'triangle',.075,.12);noise(.28,.055,360);}
+ function miss(){tone(330,.12,'square',.035);tone(247,.22,'triangle',.055,.12);}
+ function toggle(){if(!started){start();return true;}const on=master.gain.value===0;master.gain.value=on?.58:0;return on;}
+ function stop(){if(musicTimer)clearInterval(musicTimer);musicTimer=null;}
+ return {start,toggle,whistle,kick,goal,save,miss,stop};
+})();
+function startGame(){ArcadeAudio.start();ArcadeAudio.whistle();hideGoalFx();impact.active=false; $('intro').classList.add('hide');bossMode=false;setPhaseLook();active=true;shot=1;goals=0;saves=0;shotResults=[];resetPositions();updateHUD();message('CHOOSE WHERE TO PLACE YOUR SHOT');setButtons(false);}
+$('start').addEventListener('click',startGame);document.getElementById('soundToggle').addEventListener('click',e=>{const on=ArcadeAudio.toggle();e.currentTarget.textContent=on?'🔊 AUDIO':'🔇 AUDIO';});
+buttons.forEach(b=>b.addEventListener('click',()=>kick(b.dataset.dir)));
+function hideGoalFx(){const fx=$('goalFx');fx.classList.remove('show');}
+function showGoalFx(){const fx=$('goalFx');fx.classList.remove('show');void fx.offsetWidth;fx.classList.add('show');}
+function kick(dir){if(!active||locked)return;ArcadeAudio.kick();hideGoalFx();impact.active=false;turfBurst();locked=true;setButtons(true);message('TAKE A RUN-UP… SHOOT!');const targetX=dir==='left'?-4.65:dir==='right'?4.65:0;const targetY=(dir==='center'?.9:Math.random()>.48?2.25:1.25);const keeperReads=Math.random()<(bossMode?.96:keeperDifficulty[phase-1]);let keeperDir=keeperReads?dir:['left','center','right'][Math.floor(Math.random()*3)];const saved=keeperDir===dir&&(dir==='center'?Math.random()<.78:Math.random()<.83);const kx=keeperDir==='left'?-4.15:keeperDir==='right'?4.15:0;const start=performance.now(),duration=1120;anim={start,duration,dir,targetX,targetY,kx,keeperDir,saved,done:false,hit:false,ballV:null,lastPhysics:start,groundBounces:0,catchBall:false};}
+function finishShot(){const wasSave=anim.saved;if(wasSave){ArcadeAudio.save();saves++;shotResults.push('save');if(!anim?.catchBall)message('WHAT A SAVE! THE GOALKEEPER DEFLECTED IT.','red');}else{ArcadeAudio.goal();goals++;shotResults.push('goal');showGoalFx();message('GOAL!!!, WHAT A GREAT SHOT','green');}
+updateHUD();
+// stop motion and wait a beat before next play
+setTimeout(()=>{if(saves>=3){endPhase(false);return;}if(goals>=3){endPhase(true);return;}if(shot>=5){endPhase(goals>=3);return;}shot++;updateHUD();resetPositions();locked=false;message('NEXT PENALTY');setButtons(false);},1900);
+}
+function endPhase(passed) {
+    active = false; locked = true; setButtons(true); if (passed) { if (bossMode) { $('resultEyebrow').textContent = 'WORLD CHAMPION'; $('resultTitle').innerHTML = 'LEGEND <em>UIFFA!</em>'; $('resultText').textContent ='You defeated the best goalkeeper in the world! You conquered all five stages and the secret challenge.';$('continue').textContent='JUGAR DE NUEVO';$('continue').onclick=()=>{phase=1;bossMode=false;goals=0;saves=0;shot=1;shotResults=[];setPhaseLook();updateHUD();$('result').classList.add('hide');resetPositions();active=true;locked=false;message('¡EL CAMPEÓN VUELVE A LA CANCHA!');setButtons(false);};}else if(phase===5){$('resultEyebrow').textContent='SE DESBLOQUEA EL DESAFÍO SECRETO';$('resultTitle').innerHTML='¡JEFE <em>SOMBRA!</em>';$('resultText').textContent='Has conquistado las cinco fases. Pero en el estadio oscuro despierta un guardameta supersónico. ¿Te atreves a enfrentarlo?';$('continue').textContent='DESAFIAR AL JEFE SOMBRA';$('continue').onclick=()=>{bossMode=true;goals=0;saves=0;shot=1;shotResults=[];setPhaseLook();updateHUD();$('result').classList.add('hide');resetPositions();active=true;locked=false;message('FINAL GOALKEEPER');setButtons(false);};}else{$('resultEyebrow').textContent='FASE '+phase+' SUPERADA';$('resultTitle').textContent='¡CLASIFICADO!';$('resultText').textContent=`Marcaste ${goals} goles y avanzas a la ${phase===1?'segunda fase':phase===2?'tercera fase':phase===3?'cuarta fase':'quinta fase'}. El próximo portero será más difícil.`;$('continue').textContent='AVANZAR DE FASE';$('continue').onclick=()=>{phase++;goals=0;saves=0;shot=1;shotResults=[];setPhaseLook();updateHUD();$('result').classList.add('hide');resetPositions();active=true;locked=false;message('NUEVA FASE · PORTERO MÁS EXIGENTE');setButtons(false);};}}else{$('resultEyebrow').textContent='FIN DEL CAMINO';$('resultTitle').textContent='YOU LOST';$('resultText').textContent=`Conseguiste ${goals} goles y recibiste ${saves} atajadas. ¡Vuelve a intentarlo y conquista la copa!`;$('continue').textContent='REINTENTAR CAMPEONATO';$('continue').onclick=()=>{phase=1;bossMode=false;goals=0;saves=0;shot=1;shotResults=[];setPhaseLook();updateHUD();$('result').classList.add('hide');resetPositions();active=true;locked=false;message('¡VAMOS POR EL CAMPEONATO!');setButtons(false);};}
+$('result').classList.remove('hide');}
+// Animación del penal: trayectoria, contacto con el arquero/red y física de rebotes.
+function updateShot(now){
+ if(!anim)return;const a=anim;
+ if(!a.hit){
+  const t=Math.min(1,(now-a.start)/a.duration),ease=t*t*(3-2*t);
+  const endZ=a.saved?goalZ+.20:goalZ-depth+.46;
+  const curve=Math.sin(Math.PI*t);
+  ballGroup.position.x=a.targetX*ease+Math.sin(t*Math.PI*1.25)*.12;
+  ballGroup.position.y=.45+(a.targetY-.45)*ease+curve*(a.saved?.82:1.02);
+  ballGroup.position.z=7.1+(endZ-7.1)*ease;
+  ballGroup.rotation.x=t*12.5;ballGroup.rotation.z=t*9.4;
+  const dive=ease,side=a.keeperDir==='left'?1:a.keeperDir==='right'?-1:0;
+  keeper.position.x=a.kx*dive;
+  keeper.position.y=keeperHome.y+(a.keeperDir==='center'?.30:.66)*Math.sin(Math.PI*t*.88)*dive;
+  keeper.position.z=keeperHome.z+.18*dive;
+  keeper.rotation.z=side*1.30*dive;keeper.rotation.x=-.24*dive;keeper.rotation.y=side*.22*dive;
+  armPivots.forEach(o=>{if(o.leg){o.pivot.rotation.z=(side===0?(o.s===-1?-.5:.5):-o.s*1.12)*dive;o.pivot.rotation.x=.28*dive;}else{o.pivot.rotation.z=(side===0?o.s*.85:o.s*1.48)*dive;o.pivot.rotation.x=-.32*dive;}});
+  if(t>=1){
+   a.hit=true;a.hitAt=now;a.lastPhysics=now;
+   if(!a.saved){
+    impact={active:true,x:a.targetX,y:a.targetY,power:1.55,time:0};
+    // El balón golpea el fondo de la red, rebota hacia el área y cae con botes sucesivos.
+    a.ballV={x:(a.targetX*.08),y:-1.0,z:2.4};a.groundBounces=0;
+    ballGroup.position.set(a.targetX,a.targetY,goalZ-depth+.46);
+   }else{
+    // El portero puede blocar limpio o desviar con un rebote potente.
+    a.catchBall=Math.random()<.2;
+       if (a.catchBall) { a.ballV = null; message('GREAT SAVE! THE GOALKEEPER HOLDS ONTO THE BALL.','red');}
+    else{a.ballV={x:(a.dir==='left'?1.5:a.dir==='right'?-1.5:0),y:12.4,z:8.35};a.groundBounces=0;message('THE GOALKEEPER DEFLECTS IT!','red');}
+   }
+  }
+  return;
+ }
+ const dt=Math.min(.04,Math.max(.001,(now-a.lastPhysics)/1000));a.lastPhysics=now;
+ if(a.saved&&a.catchBall){
+  // El guardameta asegura la pelota entre las manos y el pecho; sin rebote falso.
+  const settle=Math.min(1,(now-a.hitAt)/380);
+  ballGroup.position.set(a.kx*.86,1.18,keeperHome.z+.48);
+  ballGroup.rotation.x*=.94;ballGroup.rotation.z*=.94;
+  keeper.position.y=Math.max(.06,keeper.position.y*(1-settle*.18));
+ }else{
+  const v=a.ballV;
+  // Integración sencilla con gravedad, fricción y restitución para que el balón bote de verdad.
+  v.y-=9.2*dt;
+  ballGroup.position.x+=v.x*dt;ballGroup.position.y+=v.y*dt;ballGroup.position.z+=v.z*dt;
+  v.x*=Math.pow(.985,dt*60);v.z*=Math.pow(.992,dt*60);
+  if(ballGroup.position.y<.48){
+   ballGroup.position.y=.48;
+   if(Math.abs(v.y)>.72&&a.groundBounces<4){v.y=Math.abs(v.y)*.66;a.groundBounces++;v.x*=.88;v.z*=.84;}
+   else{v.y=0;v.x*=.78;v.z*=.78;}
+  }
+  // Rodamiento y giro visual sincronizados con el desplazamiento.
+  ballGroup.rotation.x+=Math.max(.025,Math.abs(v.z)*dt*1.8);
+  ballGroup.rotation.z+=v.x*dt*1.4;
+ }
+ // El portero aterriza por completo y permanece sobre el césped.
+ const fall=Math.min(1,(now-a.hitAt)/330);
+ keeper.position.y=Math.max(.30,keeper.position.y*(1-fall*.62));
+ // Tiempo extra para ver la caída y los rebotes antes de anunciar el resultado.
+ const elapsed=(now-a.hitAt)/1000;
+ if(elapsed>(a.saved&&a.catchBall?1.35:2.65)&&!a.done){
+  a.done=true;finishShot();anim=null;
+ }
+}
+// idle keeper breathing, subtle net movement and camera micro motion
+const clock=new THREE.Clock();function animate(now){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);deformNet(dt);updateTurfBurst(dt);animateFlags(now*.001);if(anim)updateShot(now);else if(active&&!locked){keeper.position.y=keeperHome.y+Math.sin(now*.0017)*.012;keeper.rotation.z=Math.sin(now*.0012)*.009;}
+renderer.render(scene,camera);}requestAnimationFrame(animate);
+function resize(){
+ const w=mount.clientWidth,h=mount.clientHeight,aspect=w/h;
+ renderer.setSize(w,h,false);camera.aspect=aspect;
+ if(w<650){
+  // Encuadre vertical: aleja la cámara y calcula el FOV para que quepa
+  // toda la anchura del arco, incluidos ambos postes, incluso en móviles estrechos.
+  const camZ=17.5,targetZ=-7.2,dist=camZ-targetZ;
+  camera.position.set(0,4.8,camZ);
+  camera.lookAt(0,2.5,targetZ);
+  const requiredWidth=13.6+2.2;
+  camera.fov=Math.min(74,Math.max(54,2*Math.atan(requiredWidth/(2*dist*aspect))*180/Math.PI));
+ }else{
+  camera.fov=40;camera.position.set(0,4.05,12.8);camera.lookAt(0,2.6,-7.2);
+ }
+ camera.updateProjectionMatrix();
+}new ResizeObserver(resize).observe(mount);resize();setPhaseLook();updateHUD();
+// Touch support is native through large buttons; prevent accidental page gestures
+window.addEventListener('contextmenu',e=>e.preventDefault());
+</script>
+</body></html>
